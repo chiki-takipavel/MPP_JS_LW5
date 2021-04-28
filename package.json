@@ -1,31 +1,66 @@
 {
-  "name": "mpp-lw",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "scripts": {
-    "start": "node app.js",
-    "server": "nodemon app.js"
-  },
-  "keywords": [],
-  "author": "Pavel Miskevich <chiki-takipavel@mail.ru>",
-  "license": "ISC",
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
   "dependencies": {
-    "@hapi/joi": "^17.1.1",
-    "bcryptjs": "^2.4.3",
-    "config": "^3.3.3",
+    "@babel/preset-react": "^7.12.10",
+    "@babel/register": "^7.12.10",
+    "@material-ui/core": "^4.11.3",
+    "@material-ui/icons": "latest",
+    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/react": "^9.5.0",
+    "@testing-library/user-event": "^7.2.1",
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "config": "^3.3.6",
+    "cors": "^2.8.5",
+    "demon": "^1.4.4",
     "express": "^4.17.1",
-    "express-crypto": "^1.0.5",
-    "express-session": "^1.17.1",
-    "express-validator": "^6.9.2",
-    "hbs": "^4.1.2",
-    "jsonwebtoken": "^8.5.1",
-    "mime": "^2.5.2",
-    "mongoose": "^5.11.15",
-    "multer": "^1.4.2"
+    "ignore-styles": "^5.0.1",
+    "jwt-decode": "^3.1.2",
+    "mongodb": "^3.5.3",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "react-scripts": "4.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "client": "npm run start",
+    "server": "nodemon server/index.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "devDependencies": {
-    "concurrently": "^5.3.0",
-    "nodemon": "^2.0.7"
+    "@babel/cli": "^7.12.10",
+    "@babel/core": "^7.12.10",
+    "@babel/node": "^7.12.10",
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/preset-env": "^7.12.11",
+    "@material-ui/lab": "^4.0.0-alpha.45",
+    "bcrypt": "^4.0.1",
+    "classnames": "^2.2.6",
+    "concurrently": "^6.0.2",
+    "jsonwebtoken": "^8.5.1",
+    "md5": "^2.2.1",
+    "mongoose": "^5.9.13",
+    "nodemon": "^2.0.7",
+    "react-router-dom": "^5.1.2"
   }
 }
