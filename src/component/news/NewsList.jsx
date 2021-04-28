@@ -14,7 +14,8 @@ import {AuthContext} from "../AuthProvider/AuthProvider";
 
 const styles = theme => ({
     root: {
-        background: "#f8f8f8",
+        background: "rgba(255, 255, 255, 75%)",
+        borderRadius: "15px",
         margin: "1rem 0",
         padding: "1rem",
     },
@@ -117,18 +118,18 @@ class NewsList extends React.Component {
             <React.Fragment>
                 <Box className={classes.root} boxShadow={3}>
                     {!this.state.isFavorites &&
-                    <IconButton onClick={this.topLike} className={classes.iconButton}>
-                        Sort by likes {this.state.order ? <FavoriteBorderIcon/> : <FavoriteIcon/>}
-                    </IconButton>
+                        <IconButton onClick={this.favorites} className={classes.iconButton}>
+                            Только избранные
+                        </IconButton>
                     }
                     {!this.state.isFavorites &&
-                        <IconButton onClick={this.favorites} className={classes.iconButton}>
-                            Only favorites
+                        <IconButton onClick={this.topLike} className={classes.iconButton}>
+                            Сортировка по лайкам {this.state.order ? <FavoriteBorderIcon/> : <FavoriteIcon/>}
                         </IconButton>
                     }
                     {this.state.isFavorites &&
                         <IconButton onClick={this.all} className={classes.iconButton}>
-                            All news
+                            Все новости
                         </IconButton>
                     }
                     <Box className={classes.news}>

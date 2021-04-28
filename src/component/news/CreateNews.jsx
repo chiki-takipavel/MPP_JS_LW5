@@ -14,11 +14,16 @@ import {AuthContext} from "../AuthProvider/AuthProvider";
 
 const styles = theme => ({
     root: {
-        background: "#f8f8f8",
+        background: "rgba(255, 255, 255, 75%)",
+        borderRadius: "15px",
         margin: "1rem 0",
         padding: "1rem",
     },
 
+    button: {
+        background: "#3f51b5",
+        color: "#fff",
+    }
 });
 
 class CreateNews extends React.Component {
@@ -47,11 +52,11 @@ class CreateNews extends React.Component {
                         alignItems="center"
                     >
                         <Box width="50%">
-                            <TextField id='title' label='title' fullWidth={true}/>
+                            <TextField id='title' label='Заголовок' fullWidth={true}/>
                             <Box mt={1}>
                                 <TextField
                                     fullWidth={true}
-                                    placeholder="content"
+                                    placeholder="Содержание"
                                     multiline
                                     rows={1}
                                     rowsMax={8}
@@ -62,9 +67,9 @@ class CreateNews extends React.Component {
                             <Button
                                 type="submit"
                                 variant="contained"
-                                color="secondary"
+                                className={classes.button}
                             >
-                                Create
+                                Создать
                             </Button>
                         </Box>
                     </Grid>

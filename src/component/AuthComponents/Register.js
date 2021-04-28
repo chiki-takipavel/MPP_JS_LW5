@@ -71,7 +71,7 @@ class Registration extends React.Component {
                                         required
                                         fullWidth
                                         id="firstName"
-                                        label="First Name"
+                                        label="Имя"
                                         autoFocus
                                     />
                                 </Grid>
@@ -81,7 +81,7 @@ class Registration extends React.Component {
                                         required
                                         fullWidth
                                         id="lastName"
-                                        label="Last Name"
+                                        label="Фамилия"
                                         name="lastName"
                                         autoComplete="lname"
                                     />
@@ -92,7 +92,7 @@ class Registration extends React.Component {
                                         required
                                         fullWidth
                                         id="email"
-                                        label="Email Address"
+                                        label="Email"
                                         name="email"
                                         autoComplete="email"
                                     />
@@ -103,7 +103,7 @@ class Registration extends React.Component {
                                         required
                                         fullWidth
                                         name="password"
-                                        label="Password"
+                                        label="Пароль"
                                         type="password"
                                         id="password"
                                         autoComplete="current-password"

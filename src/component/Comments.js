@@ -71,7 +71,7 @@ export default function Comments({news, setState}){
                             {comment.content}
                         </Typography>
                         <p className={classes.time}>
-                            {`posted ${comment.date}`}
+                            {`Опубликован ${comment.date}`}
                         </p>
                     </Grid>
                 </Grid>
@@ -86,7 +86,7 @@ export default function Comments({news, setState}){
         { context.currentUser &&
             <Box px={1}>
                 <form noValidate autoComplete='off' onSubmit={onCommentSend}>
-                    <TextField id='title' label='comment...' fullWidth={true}/>
+                    <TextField id='title' label='Комментарий' fullWidth={true}/>
                 </form>
             </Box>
         }

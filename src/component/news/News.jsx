@@ -7,6 +7,7 @@ import CardActions from "@material-ui/core/CardActions";
 import Button from "@material-ui/core/Button";
 import IconButton from "@material-ui/core/IconButton";
 import FavoriteIcon from '@material-ui/icons/Favorite';
+import StarBorderIcon from '@material-ui/icons/StarBorder';
 import ModeCommentIcon from '@material-ui/icons/ModeComment';
 import {endpoints} from "../../constant/endpoints";
 import {RestRequest} from "../../service/requestService";
@@ -22,6 +23,8 @@ import StarIcon from '@material-ui/icons/Star';
 const styles = theme => ({
     root: {
         width: "80%",
+        background: "rgba(255, 255, 255, 75%)",
+        borderRadius: "15px",
         marginBottom: "1rem",
         display: "flex",
         alignContent: "space-between",
@@ -59,9 +62,12 @@ const styles = theme => ({
         justifyContent: "space-between",
         padding: "0 1.5rem 0 0"
     },
+
     button: {
+        background: "#3f51b5",
+        color: "#fff",
         marginRight: "1rem",
-        width: "5rem"
+        width: "7rem"
     },
 
     editTitle: {
@@ -187,7 +193,7 @@ class News extends React.Component {
                                        onChange={e => this.onTitleChange(e.target.value)}/>
                         }
                         {(this.props.news.author && this.context.currentUser && this.context.currentUser.email === this.props.news.author) &&
-                        <span className={classes.author}>your post!</span>
+                        <span className={classes.author}>Это Ваша новость</span>
                         }
                     </div>
                     <CardContent>
@@ -226,7 +232,7 @@ class News extends React.Component {
                                 </Typography>
                                 {this.context.currentUser &&
                                 <IconButton onClick={this.handleFavorites}>
-                                    <StarIcon color={"action"}/>
+                                    <StarIcon color={this.state.favoriteColor}/>
                                 </IconButton>
                                 }
                             </CardActions>
@@ -234,19 +240,19 @@ class News extends React.Component {
                              || (this.props.news.author && this.context.currentUser.email === this.props.news.author)) &&
                                 <div>
                                     {!this.state.edit &&
-                                        <Button onClick={this.edit} variant='contained' color='secondary'
+                                        <Button onClick={this.edit} variant='contained'
                                                 className={classes.button}>
-                                            Edit
+                                            Изменить
                                         </Button>
                                     }
                                     {this.state.edit &&
-                                    <Button onClick={this.save} variant='contained' color='secondary'
+                                    <Button onClick={this.save} variant='contained'
                                             className={classes.button}>
-                                        Save
+                                        Сохранить
                                     </Button>
                                     }
-                                    <Button onClick={this.delete} variant='contained' color='secondary' className={classes.button}>
-                                        Delete
+                                    <Button onClick={this.delete} variant='contained' className={classes.button}>
+                                        Удалить
                                     </Button>
                                 </div>
                             }

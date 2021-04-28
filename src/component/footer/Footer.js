@@ -48,7 +48,7 @@ export default function Footer(){
         <Box className={classes.root} boxShadow={3}>
             <div className={classes.card}>
                 <div className={classes.cardName}>copyrights</div>
-                <div className={classes.cardInfo}>@2021. NewsApp. All rights reserved</div>
+                <div className={classes.cardInfo}>@2021. All rights reserved</div>
             </div>
         </Box>
     );
