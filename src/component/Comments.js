@@ -1,11 +1,11 @@
 import React, {useContext} from "react"
 import Grid from "@material-ui/core/Grid";
 import {Avatar, Divider, makeStyles, Paper} from "@material-ui/core";
-import {endpoints} from "../constant/endpoints";
+import {endpointsClient, endpointsServer, iconsPath} from "../constant/endpoints";
 import Typography from "@material-ui/core/Typography";
 import Box from "@material-ui/core/Box";
 import TextField from "@material-ui/core/TextField";
-import {RestRequest} from "../service/requestService";
+import {socket} from "../service/requestService";
 import {AuthContext} from "./AuthProvider/AuthProvider";
 
 const useStyles = makeStyles({
@@ -43,19 +43,19 @@ export default function Comments({news, setState}){
     const context = useContext(AuthContext)
 
     const onCommentSend = (event) => {
-            event.preventDefault();
+        event.preventDefault();
 
-            const comment = {
-                date: Date.now(),
-                content: event.target.elements[0].value,
-                author: `${context.currentUser.name} ${context.currentUser.surname}` ?? "user"
-            }
-            RestRequest.put(endpoints.putNews(news['_id']), {}, {comment}).then(response => {
-                setState(response.data.payload);
-            })
-            // .catch(reason => {
-            //     if (reason.response.status === 401 || reason.response.status === 403) this.props.history.push(Routes.login);
-            // });
+        const comment = {
+            date: Date.now(),
+            content: event.target.elements[0].value,
+            author: `${context.currentUser.name} ${context.currentUser.surname}` ?? "user"
+        }
+        console.log("comment", comment);
+        socket.on(endpointsClient.updated, (data) => {
+            setState(data.payload);
+        });
+        socket.emit(endpointsServer.putNews, {comment, _id: news['_id']});
+
     };
 
     const commentsBlocks = comments.map((comment, index) => {
@@ -63,7 +63,7 @@ export default function Comments({news, setState}){
             <React.Fragment key={index}>
                 <Grid container wrap="nowrap" spacing={2} className={classes.commentCard}>
                     <Grid item>
-                        <Avatar alt="Remy Sharp" src={`${endpoints.iconsPath}/skype-icon.png`} />
+                        <Avatar alt="Remy Sharp" src={`${iconsPath}/skype-icon.png`} />
                     </Grid>
                     <Grid item>
                         <h4 className={classes.name}>{comment.author}</h4>

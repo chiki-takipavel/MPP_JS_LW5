@@ -1,11 +1,20 @@
-const apiUrl = 'http://localhost:8090/api';
-export const endpoints = {
-    getNews: id => `${apiUrl}/news/${id}`,
-    putNews: id => `${apiUrl}/news/${id}`,
-    deleteNews: id => `${apiUrl}/news/${id}`,
-    postNews: `${apiUrl}/news`,
-    getNewsList: `${apiUrl}/news`,
-    iconsPath: `${apiUrl}/images/icons`,
-    login: `${apiUrl}/login`,
-    registration: `${apiUrl}/registration`
+export const apiUrl = 'http://localhost:8090';
+export const endpointsServer = {
+    getNews: 'get news',
+    putNews: 'update news',
+    deleteNews: 'delete news',
+    postNews: 'create news',
+    getNewsList: 'get all news',
 };
+export const endpointsClient = {
+    updated: 'updated',
+    getAll: 'news',
+    getNew: 'new news',
+    getDelete: 'news deleted'
+};
+export const authEndpoints = {
+    login: `${apiUrl}/login`,
+    registration: `${apiUrl}/registration`,
+};
+
+export const iconsPath = `${apiUrl}/images/icons`;

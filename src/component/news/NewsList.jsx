@@ -1,13 +1,12 @@
 import * as React from "react";
 import News from "./News";
-import {endpoints} from "../../constant/endpoints";
+import {endpointsClient, endpointsServer} from "../../constant/endpoints";
 import FavoriteIcon from '@material-ui/icons/Favorite';
 import IconButton from "@material-ui/core/IconButton";
 import FavoriteBorderIcon from '@material-ui/icons/FavoriteBorder';
 import Box from "@material-ui/core/Box";
 import LinearProgress from "@material-ui/core/LinearProgress";
-import {RestRequest} from "../../service/requestService";
-import {Routes} from "../../constant/Routes";
+import {socket} from "../../service/requestService";
 import {withRouter} from "react-router-dom";
 import {withStyles} from "@material-ui/core/styles";
 import {AuthContext} from "../AuthProvider/AuthProvider";
@@ -50,36 +49,32 @@ class NewsList extends React.Component {
 
     load = (order) => {
         this.setState({loading: true});
-        RestRequest.get(endpoints.getNewsList + `?sort=likes&order=${order ? 1 : -1}`)
-            .then((response) => {
-                const news = response.data.payload;
-                this.setState({loading: false, news, order});
-            })
-            .catch(reason => {
-            if (reason.response.status === 401 || reason.response.status === 403) {
-                this.props.history.push(Routes.login);
-            }
-            });
+        let params = {
+            sort: 'likes',
+            order: order ? 1 : -1
+        };
+        socket.on(endpointsClient.getAll, (data) => {
+            this.setState({order: order, news: data.payload, loading: false});
+        });
+        socket.emit(endpointsServer.getNewsList, params);
     };
     topLike = () => {
         this.load(!this.state.order);
     };
 
     favorites = () => {
-        console.log("ffff");
-        RestRequest.get(endpoints.getNewsList+`?sort=likes&order=${1}`)
-            .then((response) => {
-                const news = response.data.payload;
-                console.log(news, "favorites");
-                console.log(this.context.currentUser.email);
-                console.log(news.filter(e => e.favorites && e.favorites.includes(this.context.currentUser.email)));
-                this.setState({loading: false, news: news.filter(e => e.favorites && e.favorites.includes(this.context.currentUser.email))});
-            })
-            .catch(reason => {
-                if (reason.response.status === 401 || reason.response.status === 403) {
-                    this.props.history.push(Routes.login);
-                }
-            });
+        let params = {
+            sort: 'likes',
+            order: 1
+        };
+        socket.on(endpointsClient.getAll, (data) => {
+            const news = data.payload;
+            console.log(news, "favorites");
+            console.log(this.context.currentUser.email);
+            console.log(news.filter(e => e.favorites && e.favorites.includes(this.context.currentUser.email)));
+            this.setState({loading: false, news: news.filter(e => e.favorites && e.favorites.includes(this.context.currentUser.email))});
+        });
+        socket.emit(endpointsServer.getNewsList, params);
         this.setState((prev) => {
             return {
                 isFavorites : !prev.isFavorites
@@ -88,16 +83,15 @@ class NewsList extends React.Component {
     };
 
     all = () => {
-        RestRequest.get(endpoints.getNewsList + `?sort=likes&order=${this.state.order ? 1 : -1}`)
-            .then((response) => {
-                const news = response.data.payload;
-                this.setState({loading: false, news})
-            })
-            .catch(reason => {
-                if (reason.response.status === 401 || reason.response.status === 403) {
-                    this.props.history.push(Routes.login);
-                }
-            });
+        let params = {
+            sort: 'likes',
+            order: this.state.order ? 1 : -1
+        };
+        socket.on(endpointsClient.getAll, (data) => {
+            const news = data.payload;
+            this.setState({loading: false, news})
+        });
+        socket.emit(endpointsServer.getNewsList, params);
         this.setState((prev) => {
             return {
                 isFavorites : !prev.isFavorites

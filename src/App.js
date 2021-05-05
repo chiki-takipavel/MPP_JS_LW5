@@ -11,9 +11,14 @@ import classNames from "classnames"
 import './styles.css'
 import Footer from "./component/footer/Footer";
 import {AuthContext} from "./component/AuthProvider/AuthProvider";
+import {socket} from "./service/requestService";
 
 class App extends React.Component {
-    classes = classNames("App", "casing", "casing__body")
+    componentWillUnmount() {
+        socket.close()
+    }
+
+    classes = classNames("App","casing", "casing__body")
     render() {
         return (
             <div className={this.classes}>

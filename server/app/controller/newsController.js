@@ -1,39 +1,18 @@
-import {StaticRouter} from "react-router-dom";
-
 const News = require('../model/newsModel');
 const ObjectId = require('mongoose').Types.ObjectId;
 const fs = require('fs')
 const path = require('path')
 const React = require('react')
-const ReactDOMServer = require('react-dom/server')
-import App from "../../../src/App"
 
-exports.getAllNewsPage = (request, response) => {
-    console.log("file")
-    fs.readFile(path.resolve("./build/index.html"), "utf-8", (error, data) => {
-        if(error){
-            console.log(error);
-            return response.status(500).send("Error on the server!");
-        }
-        const context = {};
-        return response.send(data.replace(
-            '<div id="root"></div>',
-            `<div id="root">${ReactDOMServer.renderToString(
-                <StaticRouter location={request.url} context={context}>
-                    <App />
-                </StaticRouter>)}</div>`))
-    })
-};
-
-exports.getAllNews = (request, response) => {
-    News.find().sort({[request.query.sort]: request.query.order}).exec((err, news) => {
+exports.getAllNews = (params, returnFunction) => {
+    News.find().sort({[params.sort]: params.order}).exec((err, news) => {
         if (err) {
-            response.json({
+            returnFunction({
                 status: "error",
                 message: err,
             });
         }
-        response.json({
+        returnFunction({
             status: "success",
             message: "News retrieved successfully",
             payload: news
@@ -41,14 +20,19 @@ exports.getAllNews = (request, response) => {
     })
 };
 
-exports.new = (request, response) => {
+exports.new = (newsData, returnFunction) => {
     {
         let news = new News();
-        news.title = request.body.title;
-        news.content = request.body.content;
-        news.author = request.body.email;
+        news.title = newsData.title;
+        news.content = newsData.content;
+        news.author = newsData.email;
+        console.log(news.title, news.content, news.author, "news")
         news.save((err) => {
-            response.status(200).json({
+            if(err){
+                console.log(err)
+                console.log("ERROR")
+            }
+            returnFunction({
                 message: 'New news created!',
                 payload: news
             });
@@ -56,19 +40,19 @@ exports.new = (request, response) => {
     }
 };
 
-exports.getById = (request, response) => {
-    let id = request.params.news_id;
+exports.getById = (id, returnFunction) => {
     if (!ObjectId.isValid(id)) {
-        response.status(400).send({
-            message: 'Bad id.'
-        });
-        return;
+        returnFunction({status: 400});
     }
     News.findById(id, (err, news) => {
-        if (err)
-            response.send(err);
-        response.status(200).send({
-            message: 'News details.',
+        if (err) {
+            returnFunction({
+                status: 400,
+                payload: {err}
+            })
+        }
+        returnFunction({
+            status: 200,
             payload: news
         });
     });
@@ -83,67 +67,69 @@ exports.getIcon = (request, response) => {
     response.sendFile(fileName);
 };
 
-exports.update = (request, response) => {
-    let id = request.params.news_id;
+exports.update = (newsForUpdate, returnFunction) => {
+    console.log(newsForUpdate);
+    let id = newsForUpdate._id;
     if (!ObjectId.isValid(id)) {
-        response.status(400).send({
+        return({
             message: 'Bad id.'
         });
-        return;
     }
+
+    console.log("here2");
     News.findById(id, (err, news) => {
+        console.log("here3");
+        console.log("here", err, news)
         if (err) {
-            response.send(err);
-            return;
+            return(err);
         }
         const likes = news.likes;
-        news.title = request.body.title ? request.body.title : news.title;
-        news.content = request.body.content ? request.body.content : news.content;
-        news.likes = request.body.likes ? request.body.likes : news.likes;
+        news.title = newsForUpdate.title ? newsForUpdate.title : news.title;
+        news.content = newsForUpdate.content ? newsForUpdate.content : news.content;
+        news.likes = newsForUpdate.likes ? newsForUpdate.likes : news.likes;
 
-        if(request.body.favoriteEmail){
+        if(newsForUpdate.favoriteEmail){
             console.log(news)
             if(!news.favorites){
                 news.favorites = [];
             }
 
-            if(!news.favorites.includes(request.body.favoriteEmail)){
-                news.favorites.push(request.body.favoriteEmail);
+            if(!news.favorites.includes(newsForUpdate.favoriteEmail)){
+                news.favorites.push(newsForUpdate.favoriteEmail);
             }
             else{
-                news.favorites = news.favorites.filter(e => e !== request.body.favoriteEmail);
+                news.favorites = news.favorites.filter(e => e !== newsForUpdate.favoriteEmail);
             }
         }
 
         if(!news.author){
-            news.author = request.body.email ? request.body.email : news.author;
+            news.author = newsForUpdate.email ? newsForUpdate.email : news.author;
         }
 
-        console.log(likes, news.likes, request.body.likes, request.body.email, "like!")
-        if(likes !== request.body.likes &&
-            news.likedUsers.includes(request.body.email)){
+        console.log(likes, news.likes, newsForUpdate.likes, newsForUpdate.email, "like!")
+        if(likes !== newsForUpdate.likes &&
+            news.likedUsers.includes(newsForUpdate.email)){
             news.likes = likes - 1;
-            news.likedUsers = news.likedUsers.filter(e => e !== request.body.email);
+            news.likedUsers = news.likedUsers.filter(e => e !== newsForUpdate.email);
         }
-        else if(likes !== request.body.likes){
+        else if(likes !== newsForUpdate.likes){
             if(news.likedUsers){
-                news.likedUsers.push(request.body.email)
+                news.likedUsers.push(newsForUpdate.email)
             }
             else{
-                news.likedUsers = [request.body.email]
+                news.likedUsers = [newsForUpdate.email]
             }
         }
 
-        if(request.body.comment){
-            news.comments.push(request.body.comment);
+        if(newsForUpdate.comment){
+            news.comments.push(newsForUpdate.comment);
         }
         news.save((err) => {
             if (err) {
                 console.log(err)
-                response.status(400).send(err);
-                return;
+                return(err);
             }
-            response.status(200).send({
+            returnFunction({
                 message: 'News Info updated',
                 payload: news
             });
@@ -152,10 +138,10 @@ exports.update = (request, response) => {
 };
 
 
-exports.delete = function (request, response) {
-    let id = request.params.news_id;
+exports.delete = function (news_id, returnFunction) {
+    let id = news_id;
     if (!ObjectId.isValid(id)) {
-        response.status(400).send({
+        returnFunction({
             message: 'Bad id.'
         });
         return;
@@ -164,8 +150,8 @@ exports.delete = function (request, response) {
         _id: id
     }, (err, news) => {
         if (err)
-            response.send(err);
-        response.status(204).send({
+            returnFunction(err);
+        returnFunction({
             status: "success",
             message: 'Contact deleted'
         });

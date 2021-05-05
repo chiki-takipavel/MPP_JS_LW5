@@ -7,10 +7,9 @@ import CardActions from "@material-ui/core/CardActions";
 import Button from "@material-ui/core/Button";
 import IconButton from "@material-ui/core/IconButton";
 import FavoriteIcon from '@material-ui/icons/Favorite';
-import StarBorderIcon from '@material-ui/icons/StarBorder';
 import ModeCommentIcon from '@material-ui/icons/ModeComment';
-import {endpoints} from "../../constant/endpoints";
-import {RestRequest} from "../../service/requestService";
+import {endpointsClient, endpointsServer} from "../../constant/endpoints";
+import {socket} from "../../service/requestService";
 import {withRouter} from "react-router-dom";
 import {Routes} from "../../constant/Routes";
 import {withStyles} from "@material-ui/core/styles";
@@ -97,11 +96,11 @@ class News extends React.Component {
     }
 
     delete = () => {
-        RestRequest.delete(endpoints.deleteNews(this.props.news['_id'])).then((response) => {
+        socket.on(endpointsClient.getDelete, (data) => {
+            console.log(data, this.props.news);
             this.props.deleteOne(this.props.news);
-        }).catch(reason => {
-            if (reason.response.status === 401 || reason.response.status === 403) this.props.history.push(Routes.login);
         });
+        socket.emit(endpointsServer.deleteNews, this.props.news['_id']);
     };
 
     edit = () => {
@@ -116,20 +115,18 @@ class News extends React.Component {
             news.title = this.state.newTitle;
             news.content = this.state.content;
             news.email = this.context.currentUser.email;
-            RestRequest.put(endpoints.putNews(this.props.news['_id']), {}, news).then(response => {
-                console.log(response.data.payload)
-                let news = this.props.news;
-                news.title = response.data.payload.title;
-                news.content = response.data.payload.content;
-                this.setState(news);
-            })
+            socket.on(endpointsClient.updated, (data) => {
+                console.log(data.payload)
+                    let news = this.props.news;
+                    news.title = data.payload.title;
+                    news.content = data.payload.content;
+                    this.setState(news);
+            });
+            socket.emit(endpointsServer.putNews, news);
 
             this.setState((prev) => {
                 return {edit: !prev.edit}
             })
-            // .catch(reason => {
-            //     if (reason.response.status === 401 || reason.response.status === 403) this.props.history.push(Routes.login);
-            // });
         }
     };
 
@@ -138,15 +135,13 @@ class News extends React.Component {
             let news = this.props.news;
             news.likes++;
             news.email = this.context.currentUser.email;
-            RestRequest.put(endpoints.putNews(this.props.news['_id']), {}, news).then(response => {
-                console.log(response.data.payload)
-                let news = this.props.news;
-                news.likes = response.data.payload.likes;
+            socket.on(endpointsClient.updated, (data) => {
+                console.log(data);
+                if (data.status === 401 || data.status === 403) this.props.history.push(Routes.login);
+                news.likes = data.payload.likes;
                 this.setState(news);
-            })
-            // .catch(reason => {
-            //     if (reason.response.status === 401 || reason.response.status === 403) this.props.history.push(Routes.login);
-            // });
+            });
+            socket.emit(endpointsServer.putNews, news);
         }
     };
 
@@ -154,13 +149,14 @@ class News extends React.Component {
         if (this.context.currentUser){
             let news = this.props.news;
             news.favoriteEmail = this.context.currentUser.email;
-            RestRequest.put(endpoints.putNews(this.props.news['_id']), {}, news).then(response => {
-                console.log(response.data.payload)
+            socket.on(endpointsClient.updated, (data) => {
+                console.log(data.payload)
                 let news = this.props.news;
-                news.favorites = response.data.payload.favorites;
-                console.log("favorites", response.data.payload);
+                news.favorites = data.payload.favorites;
+                console.log("favorites", data.payload);
                 this.setState({...news, favoriteColor: !news.favorites.includes(this.context.currentUser.email) ? "action" : "primary"});
-            })
+            });
+            socket.emit(endpointsServer.putNews, news);
         }
     }
 
@@ -240,19 +236,19 @@ class News extends React.Component {
                              || (this.props.news.author && this.context.currentUser.email === this.props.news.author)) &&
                                 <div>
                                     {!this.state.edit &&
-                                        <Button onClick={this.edit} variant='contained'
+                                        <Button onClick={this.edit} variant='contained' color='secondary'
                                                 className={classes.button}>
                                             Изменить
                                         </Button>
                                     }
                                     {this.state.edit &&
-                                    <Button onClick={this.save} variant='contained'
+                                    <Button onClick={this.save} variant='contained' color='secondary'
                                             className={classes.button}>
                                         Сохранить
                                     </Button>
                                     }
-                                    <Button onClick={this.delete} variant='contained' className={classes.button}>
-                                        Удалить
+                                    <Button onClick={this.delete} variant='contained' color='secondary' className={classes.button}>
+                                    Удалить
                                     </Button>
                                 </div>
                             }

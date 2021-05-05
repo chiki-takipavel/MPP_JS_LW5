@@ -1,7 +1,5 @@
 import React from "react";
 import Box from "@material-ui/core/Box";
-import classNames from "classnames"
-import {endpoints} from "../../constant/endpoints";
 import {Card, makeStyles} from "@material-ui/core";
 
 const useStyles = makeStyles({
