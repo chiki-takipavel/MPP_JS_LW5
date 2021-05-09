@@ -40,8 +40,10 @@ class Login extends React.Component {
         const password = event.target.elements[2].value;
         let resultPromise = this.context.login(email, password);
         resultPromise.then(() => {
+            console.log("login success")
             this.props.history.push(Routes.news);
         }).catch(reason => {
+            console.log("login fails")
             this.setState({error: reason.response.data.message})
         });
     };

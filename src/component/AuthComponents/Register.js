@@ -58,7 +58,7 @@ class Registration extends React.Component {
                     <CssBaseline/>
                     {this.state.error ? <Alert severity="error">{this.state.error}</Alert> : <></>}
                     <div>
-                        <Typography component="h1" variant="h5" className={classes.h5}>
+                        <Typography component="h1" variant="h5">
                             Зарегистрироваться
                         </Typography>
                         <form noValidate onSubmit={this.registration}>

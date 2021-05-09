@@ -3,14 +3,11 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-import {BrowserRouter} from "react-router-dom";
 import AuthProvider from "./component/AuthProvider/AuthProvider";
 
-ReactDOM.hydrate(
+ReactDOM.render(
     <AuthProvider>
-        <BrowserRouter>
-            <App/>
-        </BrowserRouter>
+        <App/>
     </AuthProvider>
         ,document.getElementById('root'));
 serviceWorker.unregister();

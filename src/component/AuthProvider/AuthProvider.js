@@ -14,8 +14,6 @@ export default class AuthProvider extends React.Component {
     }
 
     updateCurrentUser = user => {
-        console.log(user)
-        console.log("user in update current user")
         this.setState({user});
     };
 
@@ -33,9 +31,6 @@ export default class AuthProvider extends React.Component {
     };
 
     render() {
-        console.log(this.state)
-        console.log(this.state.user)
-        console.log("user in render context")
         return (
             <AuthContext.Provider
                 value={{

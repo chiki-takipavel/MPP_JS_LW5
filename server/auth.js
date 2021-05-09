@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const auth = require('./app/config/auth');
 const config = require('config');
 
 module.exports.isAuthorized = (request, response, next) => {

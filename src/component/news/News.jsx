@@ -8,8 +8,6 @@ import Button from "@material-ui/core/Button";
 import IconButton from "@material-ui/core/IconButton";
 import FavoriteIcon from '@material-ui/icons/Favorite';
 import ModeCommentIcon from '@material-ui/icons/ModeComment';
-import {endpointsClient, endpointsServer} from "../../constant/endpoints";
-import {socket} from "../../service/requestService";
 import {withRouter} from "react-router-dom";
 import {Routes} from "../../constant/Routes";
 import {withStyles} from "@material-ui/core/styles";
@@ -18,6 +16,10 @@ import {AuthContext} from "../AuthProvider/AuthProvider";
 import TextField from "@material-ui/core/TextField";
 import Box from "@material-ui/core/Box";
 import StarIcon from '@material-ui/icons/Star';
+import {useContext, useState} from "react";
+import {GET_POSTS} from "../../constant/query";
+import {useMutation} from "@apollo/client";
+import {ADD_TO_FAVORITES, DELETE_POST, LIKE, UPDATE_POST} from "../../constant/mutation";
 
 const styles = theme => ({
     root: {
@@ -80,11 +82,11 @@ const styles = theme => ({
     }
 });
 
-class News extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            news: this.props.news,
+function News(props) {
+    const context = useContext(AuthContext)
+
+    const [state, setState] = useState({
+            news: props.news,
             commentsOpen: false,
             edit: false,
             newTitle: null,
@@ -92,177 +94,200 @@ class News extends React.Component {
             commentColor: "action",
             likeColor: "action",
             favoriteColor: "action",
-        }
-    }
-
-    delete = () => {
-        socket.on(endpointsClient.getDelete, (data) => {
-            console.log(data, this.props.news);
-            this.props.deleteOne(this.props.news);
         });
-        socket.emit(endpointsServer.deleteNews, this.props.news['_id']);
-    };
 
-    edit = () => {
-        this.setState((prev) => {
-            return {edit: !prev.edit}
+    const updateCache = (client, {data: {deletePost: item}}) => {
+        const data = client.readQuery({
+            query: GET_POSTS,
+        });
+        const newData = {
+            posts: data.posts.filter(t => t.id !== item.id)
+        };
+        client.writeQuery({
+            query: GET_POSTS,
+            data: newData
+        });
+        props.setParent(prev => {
+            return {...prev, news: data.posts.filter(t => t.id !== item.id)}
         })
     };
 
-    save = () => {
-        if (this.context.currentUser){
-            let news = this.props.news;
-            news.title = this.state.newTitle;
-            news.content = this.state.content;
-            news.email = this.context.currentUser.email;
-            socket.on(endpointsClient.updated, (data) => {
-                console.log(data.payload)
-                    let news = this.props.news;
-                    news.title = data.payload.title;
-                    news.content = data.payload.content;
-                    this.setState(news);
-            });
-            socket.emit(endpointsServer.putNews, news);
+    const [deletePost] = useMutation(DELETE_POST);
+    const [updatePost] = useMutation(UPDATE_POST);
+    const [addLike] = useMutation(LIKE);
+    const [addToFavorites] = useMutation(ADD_TO_FAVORITES);
+    const handleDelete = () => {
+        console.log("deleteting", props, props.news['id']);
+        deletePost({
+            variables: {id: props.news['id']},
+            update: updateCache
+        }).then(e => console.log("success")).catch(e => console.log(e));
+    };
 
-            this.setState((prev) => {
-                return {edit: !prev.edit}
+    const edit = () => {
+        setState((prev) => {
+            return {...prev, edit: !prev.edit}
+        })
+    };
+
+    const save = () => {
+        if (context.currentUser){
+            let news = props.news;
+            news.title = state.newTitle;
+            news.content = state.content;
+            news.email = context.currentUser.email;
+            console.log(props.news['id'], state.newTitle, state.content);
+            updatePost({
+                variables: {
+                    id: props.news['id'], title: state.newTitle, body: state.content
+                }
+            }).then((res) => props.history.push(Routes.posts)).catch(e => console.log(e))
+
+            setState((prev) => {
+                return {...prev, edit: !prev.edit}
             })
         }
     };
 
-    like = () => {
-        if (this.context.currentUser){
-            let news = this.props.news;
-            news.likes++;
-            news.email = this.context.currentUser.email;
-            socket.on(endpointsClient.updated, (data) => {
-                console.log(data);
-                if (data.status === 401 || data.status === 403) this.props.history.push(Routes.login);
-                news.likes = data.payload.likes;
-                this.setState(news);
-            });
-            socket.emit(endpointsServer.putNews, news);
+    const like = () => {
+        console.log("like", props.news);
+        if (context.currentUser){
+            addLike({variables: {id: props.news['id'], email: context.currentUser.email}}).then(response => {
+                console.log("like success", response.data.addPostLike);
+                setState({...state, news: response.data.addPostLike});
+                props.setParent((prev) => {
+                    let news = [...prev.news.filter(e => e.id !== response.data.addPostLike.id)]
+                    news.splice(prev.news.findIndex(e => e.id === response.data.addPostLike.id), 0, response.data.addPostLike);
+                    return {
+                        ...prev,
+                        news: news
+                    }
+                })
+            }).then(e => console.log(e));
         }
     };
 
-    handleFavorites = () => {
-        if (this.context.currentUser){
-            let news = this.props.news;
-            news.favoriteEmail = this.context.currentUser.email;
-            socket.on(endpointsClient.updated, (data) => {
-                console.log(data.payload)
-                let news = this.props.news;
-                news.favorites = data.payload.favorites;
-                console.log("favorites", data.payload);
-                this.setState({...news, favoriteColor: !news.favorites.includes(this.context.currentUser.email) ? "action" : "primary"});
-            });
-            socket.emit(endpointsServer.putNews, news);
+    const handleFavorites = () => {
+        if (context.currentUser){
+            if (context.currentUser){
+                addToFavorites({variables: {id: props.news['id'], email: context.currentUser.email}}).then(response => {
+                    console.log("response!!!!!!1", response.data.addToFavorites);
+                    setState({...state, news: response.data.addToFavorites});
+                    props.news.favorites = response.data.addToFavorites.favorites;
+                    props.setParent((prev) => {
+                        return {
+                            ...prev,
+                            news: [response.data.addToFavorites, ...prev.news.filter(e => e.id !== response.data.addToFavorites.id)]
+                        }
+                    })
+                }).then(e => console.log(e));
+            }
         }
     }
 
-    handleClick = () => {
-        this.setState((prev) => {
+    const handleClick = () => {
+        setState((prev) => {
             return {
+                ...prev,
                 commentsOpen: !prev.commentsOpen,
                 commentColor: prev.commentColor === "primary" ? "action" : "primary"
             }
         })
     }
 
-    onTitleChange(value){
-        this.setState({
+    const onTitleChange = (value) => {
+        setState({
+            ...state,
             newTitle: value
         });
     }
 
-    render() {
-        const { classes } = this.props;
-        return (
-            <div className={classes.root}>
-                <Card className={classes.card}>
-                    <div className={classes.headerWrapper}>
-                        {!this.state.edit &&
-                            <CardHeader title={this.props.news.title} className={classes.header}/>
-                        }
-                        {this.state.edit &&
-                            <TextField className={classes.editTitle} id='title' label='title' value={this.state.newTitle ?? this.props.news.title}
-                                       onChange={e => this.onTitleChange(e.target.value)}/>
-                        }
-                        {(this.props.news.author && this.context.currentUser && this.context.currentUser.email === this.props.news.author) &&
-                        <span className={classes.author}>Это Ваша новость</span>
-                        }
-                    </div>
-                    <CardContent>
-                        {!this.state.edit &&
-                            <Typography variant="body2" color="textSecondary" component="p" className={classes.postText}>
-                                {this.props.news.content}
+    console.log("props news",props.news);
+    const { classes } = props;
+    return (
+        <div className={classes.root}>
+            <Card className={classes.card}>
+                <div className={classes.headerWrapper}>
+                    {!state.edit &&
+                        <CardHeader title={state.news.title} className={classes.header}/>
+                    }
+                    {state.edit &&
+                        <TextField className={classes.editTitle} id='title' label='Заголовок' value={state.newTitle ?? state.news.title}
+                                   onChange={e => onTitleChange(e.target.value)}/>
+                    }
+                    {(state.news.author && context.currentUser && context.currentUser.email === state.news.author) &&
+                    <span className={classes.author}>Это Ваша новость</span>
+                    }
+                </div>
+                <CardContent>
+                    {!state.edit &&
+                        <Typography variant="body2" color="textSecondary" component="p" className={classes.postText}>
+                            {state.news.content}
+                        </Typography>
+                    }
+                    {state.edit &&
+                        <Box mt={1}>
+                            <TextField
+                                value={state.content ?? state.news.content}
+                                onChange={e => setState({...state, content: e.target.value})}
+                                className={classes.editBody}
+                                placeholder="Содержание"
+                                multiline
+                                rows={1}
+                                rowsMax={8}
+                            />
+                        </Box>
+                    }
+                </CardContent>
+                    <CardActions className={classes.buttonWrapper}>
+                        <CardActions disableSpacing={true}>
+                            <IconButton onClick={like} aria-label="Like">
+                                <FavoriteIcon/>
+                            </IconButton>
+                            <Typography>
+                                {state.news.likes}
                             </Typography>
-                        }
-                        {this.state.edit &&
-                            <Box mt={1}>
-                                <TextField
-                                    value={this.state.content ?? this.props.news.content}
-                                    onChange={e => this.setState({content: e.target.value})}
-                                    className={classes.editBody}
-                                    placeholder="content"
-                                    multiline
-                                    rows={1}
-                                    rowsMax={8}
-                                />
-                            </Box>
-                        }
-                    </CardContent>
-                        <CardActions className={classes.buttonWrapper}>
-                            <CardActions disableSpacing={true}>
-                                <IconButton onClick={this.like} aria-label="Like">
-                                    <FavoriteIcon/>
-                                </IconButton>
-                                <Typography>
-                                    {this.props.news.likes}
-                                </Typography>
-                                <IconButton onClick={this.handleClick}>
-                                    <ModeCommentIcon color={this.state.commentColor}/>
-                                </IconButton>
-                                <Typography>
-                                    {this.props.news.comments.length}
-                                </Typography>
-                                {this.context.currentUser &&
-                                <IconButton onClick={this.handleFavorites}>
-                                    <StarIcon color={this.state.favoriteColor}/>
-                                </IconButton>
-                                }
-                            </CardActions>
-                            {this.context.currentUser && (this.context.currentUser.role === "admin"
-                             || (this.props.news.author && this.context.currentUser.email === this.props.news.author)) &&
-                                <div>
-                                    {!this.state.edit &&
-                                        <Button onClick={this.edit} variant='contained' color='secondary'
-                                                className={classes.button}>
-                                            Изменить
-                                        </Button>
-                                    }
-                                    {this.state.edit &&
-                                    <Button onClick={this.save} variant='contained' color='secondary'
-                                            className={classes.button}>
-                                        Сохранить
-                                    </Button>
-                                    }
-                                    <Button onClick={this.delete} variant='contained' color='secondary' className={classes.button}>
-                                    Удалить
-                                    </Button>
-                                </div>
+                            <IconButton onClick={handleClick}>
+                                <ModeCommentIcon color={state.commentColor}/>
+                            </IconButton>
+                            <Typography>
+                                {state.news.comments.length}
+                            </Typography>
+                            {context.currentUser &&
+                            <IconButton onClick={handleFavorites}>
+                                <StarIcon color={state.favoriteColor}/>
+                            </IconButton>
                             }
                         </CardActions>
-                </Card>
-                {this.state.commentsOpen && <Comments news={this.state.news} setState={(data) => {
-                    this.setState((prev) => {
-                        return {news: data}
-                    })
-                }}/>}
-            </div>
-        )
-    }
+                        {context.currentUser && (context.currentUser.role === "admin"
+                         || (state.news.author && context.currentUser.email === state.news.author)) &&
+                            <div>
+                                {!state.edit &&
+                                    <Button onClick={edit} variant='contained' color='secondary'
+                                            className={classes.button}>
+                                        Изменить
+                                    </Button>
+                                }
+                                {state.edit &&
+                                <Button onClick={save} variant='contained' color='secondary'
+                                        className={classes.button}>
+                                    Сохранить
+                                </Button>
+                                }
+                                <Button onClick={handleDelete} variant='contained' color='secondary' className={classes.button}>
+                                    Удалить
+                                </Button>
+                            </div>
+                        }
+                    </CardActions>
+            </Card>
+            {state.commentsOpen && <Comments news={state.news} setState={(data) => {
+                setState((prev) => {
+                    return {...prev, news: data}
+                })
+            }}/>}
+        </div>
+    )
 }
 
-News.contextType = AuthContext;
 export default withStyles(styles)(withRouter(News))

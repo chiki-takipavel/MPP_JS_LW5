@@ -1,6 +1,7 @@
 import jwt_decode from "jwt-decode";
-import {authEndpoints} from "../constant/endpoints";
 import {RestRequest} from "./requestService";
+import {endpoints} from "../constant/endpoints";
+import {client} from "../App";
 
 const getUserFromStorage = () => {
     let token = localStorage.getItem('Jwt token');
@@ -8,9 +9,9 @@ const getUserFromStorage = () => {
     let data = jwt_decode(token);
     let user = {
         name: data.name,
-        surname: data.surname,
         email: data.email,
-        role: data.role
+        role: data.role,
+        id: data['_id']
     };
     return user;
 };
@@ -22,16 +23,18 @@ const afterLogin = response => {
     return response;
 };
 const registration = (name, surname, email, password) =>
-    RestRequest.post(authEndpoints.registration, {}, {name, surname, email, password, role: "user"})
+    RestRequest.post(endpoints.registration, {}, {name, surname,email, password})
         .then(afterLogin);
 
 const login = (email, password) =>
-    RestRequest.post(authEndpoints.login, {}, {email, password})
+    RestRequest.post(endpoints.login, {}, {email, password})
         .then(afterLogin);
 
 const logout = () => {
+    client.resetStore().then(() => console.log("Restore"));
     localStorage.removeItem('Jwt token');
 };
+
 export default {
     login,
     getUserFromStorage,

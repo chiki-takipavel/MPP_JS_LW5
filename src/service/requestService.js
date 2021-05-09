@@ -1,6 +1,4 @@
 import Axios from "axios";
-import socketIOClient from "socket.io-client";
-import {apiUrl} from "../constant/endpoints";
 
 const method = {
     GET: 'get',
@@ -21,9 +19,3 @@ export const RestRequest = {
     post: (endpoint, parameters, data) => sendRequest(method.POST, endpoint, data),
     delete: (endpoint, parameters, data) => sendRequest(method.DELETE, endpoint, data)
 };
-
-export const socket = socketIOClient(apiUrl, {
-    query: {
-        token: localStorage.getItem('authToken')
-    }
-});

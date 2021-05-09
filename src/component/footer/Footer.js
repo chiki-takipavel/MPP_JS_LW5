@@ -1,6 +1,6 @@
 import React from "react";
 import Box from "@material-ui/core/Box";
-import {Card, makeStyles} from "@material-ui/core";
+import {makeStyles} from "@material-ui/core";
 
 const useStyles = makeStyles({
     root: {

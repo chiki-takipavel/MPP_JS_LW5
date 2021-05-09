@@ -1,12 +1,12 @@
-import React, {useContext} from "react"
+import React, {useContext, useState} from "react"
 import Grid from "@material-ui/core/Grid";
 import {Avatar, Divider, makeStyles, Paper} from "@material-ui/core";
-import {endpointsClient, endpointsServer, iconsPath} from "../constant/endpoints";
 import Typography from "@material-ui/core/Typography";
 import Box from "@material-ui/core/Box";
 import TextField from "@material-ui/core/TextField";
-import {socket} from "../service/requestService";
 import {AuthContext} from "./AuthProvider/AuthProvider";
+import {useMutation} from "@apollo/client";
+import {ADD_COMMENT} from "../constant/mutation";
 
 const useStyles = makeStyles({
     commentsWrapper: {
@@ -37,25 +37,31 @@ const useStyles = makeStyles({
     },
 });
 
-export default function Comments({news, setState}){
+export default function Comments(props){
     const classes = useStyles();
-    const comments = news.comments;
+    const comments = props.news.comments;
     const context = useContext(AuthContext)
 
+
+    const [state, setState] = useState({text: ""})
+    const [addComment] = useMutation(ADD_COMMENT);
+
     const onCommentSend = (event) => {
-        event.preventDefault();
+            event.preventDefault();
 
-        const comment = {
-            date: Date.now(),
-            content: event.target.elements[0].value,
-            author: `${context.currentUser.name} ${context.currentUser.surname}` ?? "user"
-        }
-        console.log("comment", comment);
-        socket.on(endpointsClient.updated, (data) => {
-            setState(data.payload);
-        });
-        socket.emit(endpointsServer.putNews, {comment, _id: news['_id']});
-
+            console.log(props.news['id'], `${context.currentUser.name} ${context.currentUser.surname}` ?? "user", event.target.elements[0].value)
+            addComment({
+                variables: {
+                    id: props.news['id'],
+                    email: `${context.currentUser.name} ${context.currentUser.surname ?? ""}` ?? "user",
+                    body: event.target.elements[0].value,
+                }
+            }).then((res) => {
+                props.setState(res.data.addComment);
+                setState({
+                    text: ""
+                })
+            }).catch(e => console.log(e))
     };
 
     const commentsBlocks = comments.map((comment, index) => {
@@ -63,7 +69,7 @@ export default function Comments({news, setState}){
             <React.Fragment key={index}>
                 <Grid container wrap="nowrap" spacing={2} className={classes.commentCard}>
                     <Grid item>
-                        <Avatar alt="Remy Sharp" src={`${iconsPath}/skype-icon.png`} />
+                        <Avatar/>
                     </Grid>
                     <Grid item>
                         <h4 className={classes.name}>{comment.author}</h4>
@@ -71,7 +77,7 @@ export default function Comments({news, setState}){
                             {comment.content}
                         </Typography>
                         <p className={classes.time}>
-                            {`Опубликован ${comment.date}`}
+                            {`Опубликован ${new Date(parseInt(comment.date)).toString()}`}
                         </p>
                     </Grid>
                 </Grid>
@@ -80,13 +86,13 @@ export default function Comments({news, setState}){
             )
     });
 
-    console.log("render2", news);
+    console.log("render2", props.news);
     return <Paper className={classes.commentsWrapper}>
         {commentsBlocks}
         { context.currentUser &&
             <Box px={1}>
                 <form noValidate autoComplete='off' onSubmit={onCommentSend}>
-                    <TextField id='title' label='Комментарий' fullWidth={true}/>
+                    <TextField value={state.text} onChange={(e)=>{setState({text: e.target.value})}} id='title' label='Комментарий' fullWidth={true}/>
                 </form>
             </Box>
         }

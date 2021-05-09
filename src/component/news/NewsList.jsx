@@ -1,17 +1,18 @@
 import * as React from "react";
 import News from "./News";
-import {endpointsClient, endpointsServer} from "../../constant/endpoints";
 import FavoriteIcon from '@material-ui/icons/Favorite';
 import IconButton from "@material-ui/core/IconButton";
 import FavoriteBorderIcon from '@material-ui/icons/FavoriteBorder';
 import Box from "@material-ui/core/Box";
 import LinearProgress from "@material-ui/core/LinearProgress";
-import {socket} from "../../service/requestService";
 import {withRouter} from "react-router-dom";
-import {withStyles} from "@material-ui/core/styles";
 import {AuthContext} from "../AuthProvider/AuthProvider";
+import {GET_POSTS} from "../../constant/query";
+import {makeStyles} from "@material-ui/core";
+import {useContext, useState} from "react";
+import {useQuery} from "@apollo/client";
 
-const styles = theme => ({
+const useStyles = makeStyles({
     root: {
         background: "rgba(255, 255, 255, 75%)",
         borderRadius: "15px",
@@ -31,109 +32,92 @@ const styles = theme => ({
     }
 });
 
-class NewsList extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {news: [], loading: false, order: true, isFavorites : false};
+function NewsList(){
+    const classes = useStyles();
+    const [state, setState] = useState({
+        isFavorites : false,
+        order: false,
+        data: null
+    })
+
+    const context = useContext(AuthContext)
+
+    const topLike = () => {
+        setState(prev => {
+            return {
+                ...prev,
+                isFavorites: prev.isFavorites,
+                order: !prev.order
+        }})
+    };
+
+    const favorites = () => {
+        setState(prev => {
+            return {
+                ...prev,
+                isFavorites: true,
+                order: prev.order
+            }})
+    };
+
+
+    const all = () => {
+        setState(prev => {
+            return {
+                ...prev,
+                isFavorites: false,
+                order: prev.order
+            }})
+    };
+
+    const setUserData = (data) => {
+        setState({...state, news: data.posts});
     }
 
-    deleteOneNews = (element) => {
-        let news = this.state.news;
-        let updatedNews = news.filter((news) => !(news['_id'] === element['_id']));
-        this.setState({news: updatedNews});
-    };
+    const {loading} = useQuery(GET_POSTS, {onCompleted: setUserData});
 
-    componentDidMount() {
-        this.load(this.state.order);
-    }
-
-    load = (order) => {
-        this.setState({loading: true});
-        let params = {
-            sort: 'likes',
-            order: order ? 1 : -1
-        };
-        socket.on(endpointsClient.getAll, (data) => {
-            this.setState({order: order, news: data.payload, loading: false});
-        });
-        socket.emit(endpointsServer.getNewsList, params);
-    };
-    topLike = () => {
-        this.load(!this.state.order);
-    };
-
-    favorites = () => {
-        let params = {
-            sort: 'likes',
-            order: 1
-        };
-        socket.on(endpointsClient.getAll, (data) => {
-            const news = data.payload;
-            console.log(news, "favorites");
-            console.log(this.context.currentUser.email);
-            console.log(news.filter(e => e.favorites && e.favorites.includes(this.context.currentUser.email)));
-            this.setState({loading: false, news: news.filter(e => e.favorites && e.favorites.includes(this.context.currentUser.email))});
-        });
-        socket.emit(endpointsServer.getNewsList, params);
-        this.setState((prev) => {
-            return {
-                isFavorites : !prev.isFavorites
-            }
-        })
-    };
-
-    all = () => {
-        let params = {
-            sort: 'likes',
-            order: this.state.order ? 1 : -1
-        };
-        socket.on(endpointsClient.getAll, (data) => {
-            const news = data.payload;
-            this.setState({loading: false, news})
-        });
-        socket.emit(endpointsServer.getNewsList, params);
-        this.setState((prev) => {
-            return {
-                isFavorites : !prev.isFavorites
-            }
-        })
-    };
-
-    render() {
-        let loading = this.state.loading;
-        if(this.state.news === undefined) {
-            return <LinearProgress/>
+    let news = state.news ? (state.order ? state.news.sort((a,b) => {
+        if (+a.likes < +b.likes) {
+            return 1
         }
-        let news = this.state.news.map((news, index) => {
-                return <News deleteOne={this.deleteOneNews} key={index} news={news}/>
-        });
-        const { classes } = this.props;
-        return (
+        if (+a.likes > +b.likes) {
+            return -1
+        }
+        return 0
+    }) : state.news) : [];
+
+    news = news.filter(e => {
+        if(state.isFavorites){
+            return e.favorites.includes(context.currentUser.email)
+        }
+        return true
+    }).map(post => <News key={post['id']} news={post} setParent={setState}/>);
+    console.log("render");
+    return (
             <React.Fragment>
                 <Box className={classes.root} boxShadow={3}>
-                    {!this.state.isFavorites &&
-                        <IconButton onClick={this.favorites} className={classes.iconButton}>
+                    {!state.isFavorites &&
+                        <IconButton onClick={favorites} className={classes.iconButton}>
                             Только избранные
                         </IconButton>
                     }
-                    {!this.state.isFavorites &&
-                        <IconButton onClick={this.topLike} className={classes.iconButton}>
-                            Сортировка по лайкам {this.state.order ? <FavoriteBorderIcon/> : <FavoriteIcon/>}
-                        </IconButton>
+                    {!state.isFavorites &&
+                    <IconButton onClick={topLike} className={classes.iconButton}>
+                        Сортировка по лайкам {!state.order ? <FavoriteBorderIcon/> : <FavoriteIcon/>}
+                    </IconButton>
                     }
-                    {this.state.isFavorites &&
-                        <IconButton onClick={this.all} className={classes.iconButton}>
+                    {state.isFavorites &&
+                        <IconButton onClick={all} className={classes.iconButton}>
                             Все новости
                         </IconButton>
                     }
                     <Box className={classes.news}>
-                        {loading ? <LinearProgress/> : news}
+                        {loading ? <LinearProgress/> : state.news &&
+                            news
+                        }
                     </Box>
                 </Box>
             </React.Fragment>)
-    }
-
 }
 
-NewsList.contextType = AuthContext;
-export default withStyles(styles)(withRouter(NewsList))
+export default withRouter(NewsList)

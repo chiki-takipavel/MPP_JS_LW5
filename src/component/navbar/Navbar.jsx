@@ -48,6 +48,7 @@ class Navbar extends React.Component {
 
     logout = () => {
         this.context.logout();
+        this.props.history.push(Routes.login);
     }
 
     render() {

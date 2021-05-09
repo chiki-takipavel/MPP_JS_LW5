@@ -1,63 +1,45 @@
 const User = require('../model/userModel');
-const jwt = require('jsonwebtoken');
-const auth = require('../config/auth');
-const md5 = require('md5');
-const config = require('config');
+const passport = require('passport');
+const authenticate = require('../auth/authenticate');
 
-exports.registration = (request, response) => {
-    console.log("registration")
-    let user = new User();
-    user.name = request.body.name;
-    user.surname = request.body.surname;
-    user.email = request.body.email;
-    user.role = request.body.role;
-    user.password = getHashPassword(request.body.password);
-    user.save((err) => {
+exports.registration = (req, res) => {
+    console.log("register", req.body);
+    User.register(new User({
+        name: req.body.name,
+        surname: req.body.surname,
+        email: req.body.email,
+        password: req.body.password,
+        role: "user"
+    }), req.body.password, (err, user) => {
+        console.log("inside reg register");
+
         if (err) {
-            if (err.code === 11000) {
-                response.status(409).send({message: 'Account already exists.'});
-                return;
-            }
-            response.status(400).send(err);
-            return
-        }
-        response.status(200).send({
-            token: generationToken(user)
-        })
-
-    })
-};
-
-exports.login = (request, response) => {
-    console.log("login")
-    User.findOne({email: request.body.email, password: getHashPassword(request.body.password)}, (err, user) => {
-        if (!user) {
-            console.log("user not found")
-            response.status(404).send({
-                message: 'User not found.'
+            console.log(err);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.json({err: err});
+        } else {
+            passport.authenticate('local')(req, res, () => {
+                const token = authenticate.generateToken({
+                    _id: req.user._id,
+                    name: req.user.name,
+                    email: req.user.email
+                });
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json({token: token, status: 'Successfully Logged In'});
             });
-            return;
         }
-        if (err) {
-            console.log("error")
-            response.send(err);
-            return;
-        }
-
-        response.status(200).send({
-            token: generationToken(user)
-        })
-    })
-};
-let generationToken = (user) => {
-    return jwt.sign({
-        name: user.name,
-        email: user.email,
-        surname: user.surname,
-        role: user.role
-    }, config.get('jwtSecret'), {expiresIn: config.get('jwtExpires')});
+    });
 };
 
-let getHashPassword = (password) => {
-    return md5(password);
+exports.login = (req, res) => {
+    console.log("we are in login")
+    passport.authenticate('local')(req, res, () => {
+        const token = authenticate.generateToken({_id: req.user._id, name: req.user.name, email: req.user.email, role: req.user.role});
+        console.log(token);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json({token: token, status: 'Successfully Logged In'});
+    });
 };

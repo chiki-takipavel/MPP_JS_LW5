@@ -1,55 +1,49 @@
-const mongoose = require("mongoose");
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const app = require('express')();
-const users = require('./app/route/user-routes');
+const express = require('express');
 const config = require('config');
+const graphqlHTTP = require('express-graphql').graphqlHTTP;
+const resolver = require('./app/resolver/resolver');
+const schema = require('./app/model/schema');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const routes = require('./app/route/routes');
+const authenticate = require('./app/auth/authenticate');
+const bodyParser = require('body-parser-graphql');
+const cors = require("cors");
+const app = express();
+const {graphqlUploadExpress} = require('graphql-upload');
+const path = require('path');
 
 app.use(cors());
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(bodyParser.json());
-app.use(users);
+app.use(bodyParser.graphql());
+app.use(express.json());
+app.use(express.urlencoded({extended: false}));
+app.use('/', routes);
+app.use(passport.initialize());
+app.use('/graphql',
+    authenticate.verifyUser,
+    graphqlUploadExpress({maxFileSize: 10000000, maxFiles: 1}),
+    graphqlHTTP({schema, rootValue: resolver})
+);
 
-const http = require('http').createServer(app);
-const io = require('socket.io');
-
-const endpoints = require('./app/constants/newsEndpoints');
-const newsController = require('./app/controller/newsController');
-
-const socket = io(http);
-const port = config.get('port');
+const PORT = config.get('port');
 
 mongoose.connect(config.get('mongoUri'), {
+    useCreateIndex: true,
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    useFindAndModify: false,
-    useCreateIndex: true
-});
-const database = mongoose.connection;
-database ? console.log("Db connected successfully") : console.log("Error connecting db");
-
-socket.on('connection', (socket) => {
-    console.log('User connected');
-    socket.on(endpoints.getAll, (params) => {
-        newsController.getAllNews(params, (data) => socket.emit(endpoints.sendAll, data));
-    });
-    socket.on(endpoints.updateNews, (news) => {
-        console.log("update");
-        newsController.update(news, (data) => socket.emit(endpoints.sendUpdatedNews, data));
-    });
-    socket.on(endpoints.createNews, (news) => {
-        console.log('create');
-        newsController.new(news, (data) => socket.emit(endpoints.sendNewNews, data));
-    });
-    socket.on(endpoints.deleteNews, (id) => {
-        console.log('Delete');
-        newsController.delete(id, (data) => socket.emit(endpoints.sendDeletedNews, data));
-    });
-    socket.on('disconnect', () => {
-        console.log('Disconnected!');
-    })
+    useFindAndModify: false
+}, (err) => {
+    err ? console.log(err.message) : console.log('Db connected successfully');
 });
 
-http.listen(port, (socketConnectOpts) => {
-    console.log('Connected to port: ' + port)
+// if (process.env.NODE_ENV === 'production') {
+//     app.use(express.static('frontend/build'));
+
+//     app.get('*', (req, res) => {
+//         res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
+//     });
+// }
+
+app.listen(PORT, () => {
+    console.log(`Connected to port: ${PORT}`)
 });
